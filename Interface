@@ -1,0 +1,103 @@
+import sys
+import sqlite3
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget,
+    QLabel, QLineEdit, QTableWidget, QTableWidgetItem
+)
+
+class PhotoCenterApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("PhotoCenter Manager")
+        self.setGeometry(100, 100, 800, 600)
+        self.initUI()
+        self.db_path = ""
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        self.table = QTableWidget()
+        layout.addWidget(self.table)
+
+        self.load_sessions_btn = QPushButton("Загрузить фотосессии")
+        self.load_sessions_btn.clicked.connect(self.load_sessions)
+        layout.addWidget(self.load_sessions_btn)
+
+        self.load_clients_btn = QPushButton("Загрузить клиентов")
+        self.load_clients_btn.clicked.connect(self.load_clients)
+        layout.addWidget(self.load_clients_btn)
+
+        self.add_record_label = QLabel("Добавить фотосессию:")
+        layout.addWidget(self.add_record_label)
+
+        self.type_input = QLineEdit()
+        self.type_input.setPlaceholderText("Тип")
+        layout.addWidget(self.type_input)
+
+        self.date_input = QLineEdit()
+        self.date_input.setPlaceholderText("Дата (YYYY-MM-DD)")
+        layout.addWidget(self.date_input)
+
+        self.place_input = QLineEdit()
+        self.place_input.setPlaceholderText("Место")
+        layout.addWidget(self.place_input)
+
+        self.photographer_id_input = QLineEdit()
+        self.photographer_id_input.setPlaceholderText("ФотографID")
+        layout.addWidget(self.photographer_id_input)
+
+        self.add_record_btn = QPushButton("Добавить запись")
+        self.add_record_btn.clicked.connect(self.add_record)
+        layout.addWidget(self.add_record_btn)
+
+        container = QWidget()
+        container.setLayout(layout)
+        self.setCentralWidget(container)
+
+    def load_sessions(self):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Фотосессия")
+        rows = cursor.fetchall()
+        self.table.setRowCount(len(rows))
+        self.table.setColumnCount(5)
+        self.table.setHorizontalHeaderLabels(["ID", "Тип", "Дата", "Место", "ФотографID"])
+        for i, row in enumerate(rows):
+            for j, value in enumerate(row):
+                self.table.setItem(i, j, QTableWidgetItem(str(value)))
+        conn.close()
+
+    def load_clients(self):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Клиент")
+        rows = cursor.fetchall()
+        self.table.setRowCount(len(rows))
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(["ID", "Имя", "Email", "Телефон"])
+        for i, row in enumerate(rows):
+            for j, value in enumerate(row):
+                self.table.setItem(i, j, QTableWidgetItem(str(value)))
+        conn.close()
+
+    def add_record(self):
+        record_type = self.type_input.text()
+        record_date = self.date_input.text()
+        record_place = self.place_input.text()
+        photographer_id = self.photographer_id_input.text()
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO Фотосессия (Тип, Дата, Место, ФотографID) VALUES (?, ?, ?, ?)",
+            (record_type, record_date, record_place, photographer_id)
+        )
+        conn.commit()
+        conn.close()
+        self.load_sessions()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = PhotoCenterApp()
+    window.show()
+    sys.exit(app.exec_())
